@@ -24,6 +24,7 @@ public:
 	static int startCapture();
 	static int captureImage(unsigned char** pData, int type, int nc, int nr);
 	static int sendRoi(int x, int y, int w, int h);
+	static int getRoiImage(unsigned char* pData, int type, int nc, int nr);
 
 private:
 	static HANDLE fileHandle;

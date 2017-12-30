@@ -238,7 +238,6 @@ int Utility::sendRoi(int x, int y, int w, int h)
 	DWORD	bytesWritten = 0;
 	int* intPoint;
 
-
 	data[0] = 0xA6;
 	intPoint = (int*)&data[1];
 	*intPoint = x;
@@ -259,6 +258,42 @@ int Utility::sendRoi(int x, int y, int w, int h)
 
 		return FALSE;
 	}
+
+	return TRUE;
+}
+
+int Utility::getRoiImage(unsigned char* pData, int type, int nc, int nr)
+{
+	DWORD	bytesRead = 0;
+	DWORD	imageSize = type * nr * nc / 8;
+	DWORD	bytesReadTotal = 0;
+	const int perData = 16380;
+
+	printf("[getRoiImage]nc:%d,nr:%d\n", nc, nr);
+
+	if (pData == NULL)
+	{
+		printf("No enough memory space to allocation.\n");
+
+		return FALSE;
+	}
+
+	printf("Start to read %d bytes\n", imageSize);
+
+	while (bytesReadTotal < imageSize)
+	{
+		if (ReadFile(fileHandle, pData + bytesReadTotal, nc, &bytesRead, NULL) != FALSE)
+		{
+			if (bytesRead > 0)
+			{
+				bytesReadTotal += bytesRead;
+
+				//printf("Read %d bytes, total:%d\n", bytesRead, bytesReadTotal);
+			}
+		}
+	}
+
+	printf("End to read %d bytes\n", bytesReadTotal);
 
 	return TRUE;
 }

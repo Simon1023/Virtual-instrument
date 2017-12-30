@@ -185,10 +185,58 @@ Void MyForm::video_Click(System::Object^  sender, System::EventArgs^  e) {
 
 Void MyForm::ok_Click(System::Object^  sender, System::EventArgs^  e) 
 {
+	int type = GRAY_IMAGE;
+	unsigned char *pData = NULL, *pin = NULL;
+
 	roiDigit->Enabled = false;
 	roiWave->Enabled = false;
 
+	resultImage = gcnew Bitmap(roiW, roiH, Imaging::PixelFormat::Format24bppRgb);
+	rect = System::Drawing::Rectangle(0, 0, roiW, roiH);
+
+	pData  = (unsigned char*)calloc(roiW*roiH*type/8, sizeof(unsigned char));
+
 	Utility::sendRoi(roiX, roiY, roiW, roiH);
+
+	Utility::getRoiImage(pData, type, roiW, roiH);
+
+	//Lock欲處理的像素範圍(避免其他程序修改該向素值)，參數一為限定像素處理範圍，參數二為設定處理模式(讀取、寫入、讀取寫入，第三個像素為設定該像素模式bit? channel?)
+	resultImageData = resultImage->LockBits(rect, Imaging::ImageLockMode::ReadWrite, Imaging::PixelFormat::Format24bppRgb);
+
+	//將int指標指向Image像素資料的最前面位置
+	resultPtr = resultImageData->Scan0;
+
+	//設定指標
+	pin = pData;
+	pout = (Byte*)((Void*)resultPtr);
+
+	//巡迴每一個像素
+	for (int y = 0; y < roiH; y++) {
+		for (int x = 0; x < roiW; x++) {
+			//像素值填入
+			if (type == GRAY_IMAGE) {
+				pout[0] = pout[1] = pout[2] = (Byte)*pin;	//填入像素值 channel 0 (Blue), 填入像素值 channel 1 (Green), 填入像素值 channel 2 (Red)
+				pin++;
+			}
+			else if (type == COLOR_IMAGE) {
+				pout[0] = (Byte)*pin;
+				pout[1] = (Byte)*(pin + 1);
+				pout[2] = (Byte)*(pin + 2);
+				pin += 3;
+			}
+
+			//指到下一個像素資訊
+			pout += 3;
+		}
+	}
+
+	//Unlock處理完畢的像素範圍
+	resultImage->UnlockBits(resultImageData);
+
+	//將影像顯示在pictureBox
+	pictureBox1->Image = resultImage;
+
+	free(pData);
 }
 
 Void MyForm::roiDigit_Click(System::Object^  sender, System::EventArgs^  e) 
@@ -287,6 +335,10 @@ void MyForm::pictureBox1_MouseUp(Object^ /*sender*/, System::Windows::Forms::Mou
 			roiX = e->X;
 			roiW = mouseEventDown->X - roiX;
 		}
+
+		//20171230 Simon: A workaround for a strange issue.It makes the image abornormal.
+		if (roiW % 4 != 0)
+			roiW = (roiW / 4 + 1) * 4;
 
 		if (mouseEventDown->Y < e->Y)
 		{

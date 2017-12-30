@@ -39,12 +39,33 @@
 #include "string.h"
 
 /* USER CODE BEGIN Includes */
+#define IMAGE_W 640
+#define IMAGE_H 480
+#define IMAGE_SIZE 307200	//640*480*1
+
+#define COLOR_GRAY	1
+#define COLOR_RGB	3
+
+#define CMD_READY 0xA5
+#define CMD_GET_ROI 0xA6
+#define CMD_SEND_ROI 0xA7
+
+#define TRANSFER_SIZE 16380
+
 extern unsigned char OrgImgBuf[];
 extern uint32_t DMA_FRAME_BUFFER;
 extern uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len);
 extern int8_t CDC_Receive_HS  (uint8_t* pbuf, uint32_t *Len);
 
+enum{
+	STATUS_PENDING,
+	STATUS_READY,
+	STATUS_CROP
+};
+
 uint8_t gReady=0;
+uint8_t gStatus = STATUS_PENDING;
+uint8_t gColorType = COLOR_GRAY;
 
 struct ROI {
 	int x;
@@ -56,6 +77,7 @@ struct ROI {
 //int gRoiX=0,gRoiY=0,gRoiW=0,gRoiH=0;
 
 int SendImage(unsigned char * ImgBuf);
+int SendRoiImage(uint8_t* pSrcBuf);
 int checkCommand();
 
 /* USER CODE END Includes */
@@ -116,7 +138,6 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
-
 int main(void)
 {	
 //uint8_t * sccb_data;
@@ -159,7 +180,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	uint8_t * Data = OrgImgBuf;
-	
+
 	while(1)
 	{
 		if(HAL_GPIO_ReadPin(MB_DICTL1_GPIO_Port,MB_DICTL1_Pin) == SET)
@@ -198,7 +219,6 @@ int main(void)
 			while(HAL_GPIO_ReadPin(MB_DICTL1_GPIO_Port,MB_DICTL1_Pin) == SET);
 			
 			SendImage(Data);
-			
 		}	
 #else
 		checkCommand();
@@ -212,6 +232,13 @@ int main(void)
 				SendImage(Data);
 			
 				gReady=0;
+		}
+
+		if(gStatus==STATUS_CROP)
+		{
+			SendRoiImage(Data);
+			
+			gStatus=STATUS_PENDING;
 		}
 
 #endif		
@@ -802,7 +829,7 @@ int SendImage(uint8_t * ImgBuf)
 	uint8_t Buf[10] = {0};
 	uint32_t *Len;
 	
-	int Remain = PixCnt;
+	int Remain;
 	unsigned PixPtr = 0;
 
 	//20171019 Simon
@@ -828,15 +855,17 @@ int SendImage(uint8_t * ImgBuf)
 #endif	
 
 #if 1
-	PixCnt = 307200;
 
+	PixCnt = IMAGE_W*IMAGE_H;
 	Remain = PixCnt;
+	
 	while (Remain > 0)
 	{
 		if (Remain > 16380)
 			CDC_Transmit_HS((ImgBuf+PixPtr), 16380);	
 		else if (Remain < 16380)
-			CDC_Transmit_HS((ImgBuf+PixPtr), Remain);	
+			CDC_Transmit_HS((ImgBuf+PixPtr), Remain);
+		
 		PixPtr += 16380;
 		Remain -= 16380;		
 		HAL_Delay(20);
@@ -848,6 +877,22 @@ int SendImage(uint8_t * ImgBuf)
 #endif	
 	
 	return(0);
+}
+
+int SendRoiImage(uint8_t* pSrcBuf)
+{
+	uint8_t* pStart = pSrcBuf+IMAGE_W*gRoi.y+gRoi.x;
+	int i;
+	
+	for(i=0;i<gRoi.h;i++)
+	{		
+		CDC_Transmit_HS(pStart, gRoi.w);
+		pStart=pStart+IMAGE_W;
+		
+		HAL_Delay(20);
+	}
+	
+	return 0;
 }
 
 //20171019 Simon
@@ -882,16 +927,18 @@ int checkCommand()
 //		printf("Buf[0]=0x%x\n",Buf[0]);
 	
 	//Capture
-	if (*Buf == 0xA5)
+	if (*Buf == CMD_READY) 
 	{	
 		gReady=1;
 		
 		return 1;
 	}
-	else if(*Buf == 0xA6)
+	else if(*Buf == CMD_GET_ROI)
 	{
 		
 		memcpy(&gRoi,&Buf[1],sizeof(gRoi));
+		
+		gStatus=STATUS_CROP;
 		
 		return 2;
 	}
