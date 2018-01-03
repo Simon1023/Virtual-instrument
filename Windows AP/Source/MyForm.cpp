@@ -336,10 +336,6 @@ void MyForm::pictureBox1_MouseUp(Object^ /*sender*/, System::Windows::Forms::Mou
 			roiW = mouseEventDown->X - roiX;
 		}
 
-		//20171230 Simon: A workaround for a strange issue.It makes the image abornormal.
-		if (roiW % 4 != 0)
-			roiW = (roiW / 4 + 1) * 4;
-
 		if (mouseEventDown->Y < e->Y)
 		{
 			roiY = mouseEventDown->Y;
@@ -354,6 +350,10 @@ void MyForm::pictureBox1_MouseUp(Object^ /*sender*/, System::Windows::Forms::Mou
 		//20180103 Simon: A workaround for the abornormal coordinate.
 		roiW -= 18;
 		roiH -= 18;
+
+		//20171230 Simon: A workaround for a strange issue.It makes the image abornormal.
+		if (roiW % 4 != 0)
+			roiW = (roiW / 4 + 1) * 4;
 
 		//Point startPoint = theRectangle.Location;
 
