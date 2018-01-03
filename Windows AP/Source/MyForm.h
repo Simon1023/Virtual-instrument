@@ -115,10 +115,11 @@ namespace VirtualInstrument {
 			// 
 			this->pictureBox1->Location = System::Drawing::Point(4, 4);
 			this->pictureBox1->Name = L"pictureBox1";
+			this->pictureBox1->SizeMode = PictureBoxSizeMode::AutoSize;
 			this->pictureBox1->Size = System::Drawing::Size(640, 480);
-			this->pictureBox1->TabIndex = 0;
-			this->pictureBox1->TabStop = false;
-			this->pictureBox1->Click += gcnew System::EventHandler(this, &MyForm::pictureBox1_Click);
+			//this->pictureBox1->TabIndex = 0;
+			//this->pictureBox1->TabStop = false;
+			//this->pictureBox1->Click += gcnew System::EventHandler(this, &MyForm::pictureBox1_Click);
 			this->pictureBox1->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &MyForm::pictureBox1_MouseDown);
 			this->pictureBox1->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MyForm::pictureBox1_MouseMove);
 			this->pictureBox1->MouseUp += gcnew System::Windows::Forms::MouseEventHandler(this, &MyForm::pictureBox1_MouseUp);

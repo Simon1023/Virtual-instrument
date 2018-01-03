@@ -106,7 +106,7 @@ Void MyForm::capture_Click(System::Object^  sender, System::EventArgs^  e)
 	resultImage->UnlockBits(resultImageData);
 
 	//將影像顯示在pictureBox
-	pictureBox1->Image = resultImage;
+	pictureBox1->Image = dynamic_cast<Image^>(resultImage);
 
 	roiDigit->Enabled = true;
 	roiWave->Enabled = true;
@@ -265,7 +265,7 @@ void MyForm::pictureBox1_MouseDown(Object^ sender, System::Windows::Forms::Mouse
 	if (roiDigit->Enabled != true && roiWave->Enabled != true)
 		return;
 
-	printf("MouseDown\n");
+	printf("MouseDown(X:%d,Y:%d)\n",e->X, e->Y);
 
 	// Set the isDrag variable to true and get the starting point 
 	// by using the PointToScreen method to convert form 
@@ -319,7 +319,7 @@ void MyForm::pictureBox1_MouseUp(Object^ /*sender*/, System::Windows::Forms::Mou
 	// If the MouseUp event occurs, the user is not dragging.
 	if (e->Button == System::Windows::Forms::MouseButtons::Left && isDrag == true)
 	{
-		printf("MouseUp\n");
+		printf("MouseUp(X:%d,Y:%d)\n",e->X, e->Y);
 
 		isDrag = false;
 
@@ -350,6 +350,10 @@ void MyForm::pictureBox1_MouseUp(Object^ /*sender*/, System::Windows::Forms::Mou
 			roiY = e->Y;
 			roiH = mouseEventDown->Y - roiY;
 		}
+
+		//20180103 Simon: A workaround for the abornormal coordinate.
+		roiW -= 18;
+		roiH -= 18;
 
 		//Point startPoint = theRectangle.Location;
 
